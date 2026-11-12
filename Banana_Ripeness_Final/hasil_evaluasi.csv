@@ -1,0 +1,9 @@
+split,kelas,Precision,Recall,mAP50,mAP50_95
+val,ALL,0.796,0.722,0.76,0.456
+val,Overripe,0.875,0.705,0.781,0.483
+val,Ripe,0.734,0.715,0.733,0.434
+val,Unripe,0.778,0.748,0.765,0.452
+test,ALL,0.729,0.655,0.694,0.403
+test,Overripe,0.766,0.577,0.667,0.386
+test,Ripe,0.649,0.638,0.645,0.352
+test,Unripe,0.773,0.751,0.772,0.473
