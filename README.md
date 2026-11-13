@@ -1,59 +1,464 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🍌 BananaVision
+### Sistem Deteksi Tingkat Kematangan Buah Pisang Menggunakan YOLO
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+BananaVision merupakan aplikasi berbasis website yang digunakan untuk mendeteksi buah pisang sekaligus mengklasifikasikan tingkat kematangannya menggunakan model **YOLO (You Only Look Once)**.
 
-## About Laravel
+Aplikasi ini dibangun menggunakan **Laravel** sebagai frontend dan backend website, serta **FastAPI (Python)** untuk menjalankan model deteksi YOLO.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 1. Fitur Aplikasi
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+BananaVision memiliki tiga fitur utama:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. **Live Webcam** — mendeteksi pisang secara langsung melalui kamera perangkat.
+2. **Upload Gambar** — mendeteksi tingkat kematangan pisang dari gambar JPG, PNG, atau WEBP.
+3. **Upload Video** — mendeteksi tingkat kematangan pisang dari video MP4 atau WEBM dengan memproses frame video secara berkala.
 
-## Learning Laravel
+Hasil deteksi meliputi:
+- Bounding box pada objek pisang.
+- Label kelas kematangan.
+- Confidence score hasil prediksi.
+- Caption hasil deteksi.
+- Jumlah pisang yang terdeteksi.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Kelas Kematangan Pisang
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Kelas YOLO | Keterangan |
+|---|---|
+| Unripe | Mentah |
+| Ripe | Matang |
+| Overripe | Terlalu matang |
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 2. Teknologi yang Digunakan
 
-### Premium Partners
+| Teknologi | Kegunaan |
+|---|---|
+| Laravel | Website dan pengelolaan request |
+| PHP | Backend Laravel |
+| Blade | Tampilan halaman website |
+| JavaScript | Webcam, upload media, dan visualisasi deteksi |
+| Python | Menjalankan model machine learning |
+| FastAPI | API untuk menghubungkan Laravel dengan YOLO |
+| Ultralytics YOLO | Deteksi dan klasifikasi kematangan pisang |
+| OpenCV | Pemrosesan gambar |
+| NumPy | Pengolahan data gambar |
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 3. Persiapan Sebelum Instalasi
 
-## Contributing
+Pastikan perangkat sudah memiliki software berikut:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- Git
+- PHP yang kompatibel dengan versi Laravel project
+- Composer
+- Python yang kompatibel dengan dependensi YOLO
+- Node.js dan npm
+- Visual Studio Code (opsional)
 
-## Code of Conduct
+**Catatan:** Panduan terminal di bawah menggunakan Windows PowerShell.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Cek instalasi
 
-## Security Vulnerabilities
+Buka terminal, kemudian jalankan:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+git --version
+php -v
+composer --version
+python --version
+node -v
+npm -v
+```
 
-## License
+Jika semuanya menampilkan versi masing-masing, lanjutkan ke tahap berikutnya.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Jika salah satu perintah tidak dikenali, instal software tersebut terlebih dahulu dan pastikan PATH sudah dikonfigurasi.
+
+---
+
+## 4. Clone Repository GitHub
+
+Buka terminal pada folder tempat project ingin disimpan.
+
+Jalankan:
+
+```bash
+git clone https://github.com/ssyifaahqd/BananaVision.git
+```
+
+Masuk ke folder project:
+
+```bash
+cd BananaVision
+```
+
+Pastikan folder project berhasil diunduh.
+
+---
+
+## 5. Struktur Folder Project
+
+Struktur utama BananaVision adalah sebagai berikut:
+
+```text
+BananaVision/
+│
+├── app/
+│   ├── Http/
+│   │   └── Controllers/
+│   │       └── DetectionController.php
+│   │
+│   └── Services/
+│       └── YoloService.php
+│
+├── bootstrap/
+├── config/
+│   └── services.php
+│
+├── public/
+│   ├── css/
+│   └── js/
+│       └── detection.js
+│
+├── resources/
+│   └── views/
+│       ├── home.blade.php
+│       ├── detection.blade.php
+│       └── about.blade.php
+│
+├── routes/
+│   └── web.php
+│
+├── Banana_Ripeness_Final/
+│   ├── api.py
+│   ├── detect.py
+│   ├── best.pt
+│   ├── yolov8n.pt
+│   ├── requirements.txt
+│   └── venv/
+│
+├── .env
+├── artisan
+├── composer.json
+├── package.json
+└── README.md
+```
+
+**Perhatian:** File `.env`, `venv`, dan model `.pt` mungkin tidak tersedia setelah clone karena dapat dikecualikan dari Git. Folder `venv` harus dibuat sendiri. File model perlu diperoleh dari anggota tim jika tidak disertakan dalam repository.
+
+---
+
+## 6. Instalasi Laravel
+
+Pastikan terminal berada pada folder utama BananaVision.
+
+### Langkah 1 — Install dependency PHP
+
+```bash
+composer install
+```
+
+Tunggu hingga proses selesai.
+
+### Langkah 2 — Install dependency frontend
+
+```bash
+npm install
+```
+
+### Langkah 3 — Buat file environment Laravel
+
+Pada Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Jika file `.env` sudah tersedia, langkah ini tidak perlu dilakukan.
+
+### Langkah 4 — Generate application key
+
+```bash
+php artisan key:generate
+```
+
+### Langkah 5 — Konfigurasi koneksi FastAPI
+
+Buka file `.env` dan tambahkan:
+
+```env
+YOLO_API_URL=http://127.0.0.1:8001
+```
+
+Kemudian buka `config/services.php` dan pastikan terdapat konfigurasi berikut di dalam array `return`:
+
+```php
+'yolo' => [
+    'url' => env(
+        'YOLO_API_URL',
+        'http://127.0.0.1:8001'
+    ),
+],
+```
+
+Konfigurasi ini digunakan oleh Laravel untuk menghubungi FastAPI.
+
+### Langkah 6 — Bersihkan cache Laravel
+
+```bash
+php artisan optimize:clear
+```
+
+### Langkah 7 — Build frontend
+
+Jika project menggunakan Vite, jalankan:
+
+```bash
+npm run build
+```
+
+Untuk development, `npm run dev` juga dapat digunakan, tetapi harus dijalankan pada terminal tersendiri.
+
+**Database:** Jika konfigurasi project menggunakan database, siapkan database dan jalankan migrasi sesuai kebutuhan. Jangan langsung menjalankan migrasi tanpa memastikan konfigurasi database pada `.env` sudah benar. Untuk Laravel yang menggunakan SQLite, pastikan file database tersedia jika diperlukan.
+
+---
+
+## 7. Instalasi Python dan YOLO
+
+Buka terminal baru.
+
+Masuk ke folder model:
+
+```bash
+cd Banana_Ripeness_Final
+```
+
+Jika terminal sudah berada di folder utama project, perintah tersebut dapat langsung digunakan.
+
+### Langkah 1 — Buat virtual environment
+
+```bash
+python -m venv venv
+```
+
+Virtual environment digunakan agar library Python project tidak bercampur dengan instalasi Python lainnya.
+
+### Langkah 2 — Aktifkan virtual environment
+
+Pada Windows PowerShell:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+Jika berhasil, terminal akan menampilkan `(venv)`.
+
+Jika PowerShell memblokir aktivasi, jalankan:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+Kemudian ulangi aktivasi.
+
+### Langkah 3 — Upgrade pip
+
+```bash
+python -m pip install --upgrade pip
+```
+
+### Langkah 4 — Install library Python
+
+Jika `requirements.txt` sudah tersedia dan sesuai dengan API:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Pastikan library berikut tersedia:
+
+```bash
+python -m pip install fastapi uvicorn python-multipart ultralytics opencv-python numpy
+```
+
+Perintah kedua digunakan untuk melengkapi dependency jika belum tersedia.
+
+### Langkah 5 — Periksa instalasi library
+
+```bash
+python -c "import cv2, numpy, fastapi, ultralytics, uvicorn; print('Library berhasil dimuat')"
+```
+
+Jika muncul:
+
+```text
+Library berhasil dimuat
+```
+
+berarti dependency utama API sudah dapat diimpor.
+
+---
+
+## 8. Menyiapkan Model YOLO
+
+Pastikan folder `Banana_Ripeness_Final` memiliki:
+
+```text
+Banana_Ripeness_Final/
+├── api.py
+├── detect.py
+├── best.pt
+└── yolov8n.pt
+```
+
+Keterangan:
+
+- `best.pt`: model YOLO hasil training untuk mendeteksi tingkat kematangan pisang.
+- `yolov8n.pt`: model COCO yang digunakan sebagai filter tambahan.
+- `detect.py`: fungsi inference dan pemrosesan hasil deteksi.
+- `api.py`: endpoint FastAPI yang diakses Laravel.
+
+Jika `best.pt` tidak tersedia di GitHub, minta file tersebut kepada anggota tim, lalu letakkan pada folder yang sama dengan `api.py`.
+
+**Jangan mengganti `best.pt` dengan model YOLO umum**, karena model tersebut belum tentu memiliki kelas Unripe, Ripe, dan Overripe.
+
+---
+
+## 9. Menjalankan FastAPI
+
+Pastikan terminal berada di:
+
+```text
+BananaVision/Banana_Ripeness_Final
+```
+
+dan virtual environment sudah aktif.
+
+Jalankan:
+
+```bash
+python -m uvicorn api:app --host 127.0.0.1 --port 8001
+```
+
+Jika berhasil, terminal akan menampilkan pesan seperti:
+
+```text
+Uvicorn running on http://127.0.0.1:8001
+```
+
+### Memeriksa API
+
+Buka browser:
+
+```text
+http://127.0.0.1:8001/health
+```
+
+Jika model berhasil dimuat, respons akan menampilkan:
+
+```json
+{
+  "status": "ok",
+  "model_loaded": true,
+  "coco_loaded": true,
+  "classes": {
+    "0": "Overripe",
+    "1": "Ripe",
+    "2": "Unripe"
+  }
+}
+```
+
+Urutan kelas mengikuti model `best.pt` yang digunakan.
+
+Untuk menguji upload gambar langsung melalui FastAPI, buka:
+
+```text
+http://127.0.0.1:8001/docs
+```
+
+Pilih endpoint `POST /predict`, klik **Try it out**, unggah gambar, lalu klik **Execute**.
+
+Jika berhasil, API akan mengembalikan hasil deteksi dalam format JSON.
+
+**Jangan tutup terminal FastAPI selama menggunakan website.**
+
+---
+
+## 10. Menjalankan Laravel
+
+Buka **terminal baru** tanpa menghentikan FastAPI.
+
+Masuk ke folder utama BananaVision.
+
+Jalankan:
+
+```bash
+php artisan serve
+```
+
+Jika berhasil, akan muncul alamat:
+
+```text
+http://127.0.0.1:8000
+```
+
+Buka alamat tersebut melalui browser.
+
+Halaman deteksi dapat diakses melalui:
+
+```text
+http://127.0.0.1:8000/detection
+```
+
+### Penting: Dua server harus berjalan bersamaan
+
+**Terminal 1 — FastAPI**
+
+```bash
+python -m uvicorn api:app --host 127.0.0.1 --port 8001
+```
+
+**Terminal 2 — Laravel**
+
+```bash
+php artisan serve
+```
+
+Laravel berjalan di port `8000`, sedangkan FastAPI berjalan di port `8001`.
+
+---
+
+## 11. Cara Menggunakan BananaVision
+
+### A. Live Webcam
+
+1. Buka halaman Detection.
+2. Pilih mode **Webcam**.
+3. Klik tombol untuk mengaktifkan kamera.
+4. Izinkan browser mengakses webcam.
+5. Arahkan kamera ke buah pisang.
+6. Sistem akan mengirim frame kamera ke YOLO secara berkala.
+7. Hasil deteksi ditampilkan melalui bounding box, label, confidence, dan caption.
+
+Gunakan tombol jeda atau berhenti untuk menghentikan deteksi.
+
+### B. Upload Gambar
+
+1. Pilih mode **Image**.
+2. Upload gambar pisang.
+3. Gunakan format JPG, PNG, atau WEBP.
+4. Ukuran gambar maksimal 8 MB.
+5. Klik tombol untuk menjalankan deteksi.
+6. Sistem akan menampilkan hasil klasifikasi kematangan pisang.
+
+### C. Upload Video
+
+1. Pilih mode **Video**.
+2. Upload video berformat MP4 atau WEBM.
+3. Ukuran video maksimal 100 MB.
+4. Klik tombol untuk memulai analisis.
+5. Video akan diputar dan frame dikirim ke model YOLO secara berkala.
+6. Hasil deteksi akan ditampilkan di atas video.
+
+**Catatan:** Video diproses per frame melalui browser. Sistem tidak otomatis menghasilkan file video baru yang sudah memiliki bounding box.

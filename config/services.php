@@ -30,12 +30,16 @@ return [
         ],
     ],
 
-    // Konfigurasi API YOLO BananaVision
+    /*
+    |--------------------------------------------------------------------------
+    | BananaVision YOLO API
+    |--------------------------------------------------------------------------
+    | Menghubungkan Laravel dengan FastAPI Python.
+    | FastAPI berjalan pada http://127.0.0.1:8001
+    */
+
     'yolo' => [
-        'url' => env(
-            'YOLO_API_URL',
-            'http://127.0.0.1:8001'
-        ),
+        'url' => env('YOLO_API_URL', 'http://127.0.0.1:8001'),
     ],
 
 ];
