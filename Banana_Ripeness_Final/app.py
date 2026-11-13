@@ -10,9 +10,9 @@ from detect import draw, caption, predict, load_coco
 st.set_page_config(page_title="Deteksi Kematangan Pisang", page_icon="🍌", layout="wide")
 st.title("🍌 Deteksi Kematangan Pisang")
 
-@st.cache_resource
 BASE_DIR = Path(__file__).resolve().parent
 
+@st.cache_resource
 def load():
     return YOLO(str(BASE_DIR / "best.pt"))
 @st.cache_resource
