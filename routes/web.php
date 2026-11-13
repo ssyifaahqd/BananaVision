@@ -4,8 +4,15 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DetectionController;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes - BananaVision
+|--------------------------------------------------------------------------
+*/
+
 // Halaman Beranda
-Route::view('/', 'home')->name('home');
+Route::view('/', 'home')
+    ->name('home');
 
 // Halaman Deteksi
 Route::view('/detection', 'detection')
@@ -15,11 +22,8 @@ Route::view('/detection', 'detection')
 Route::view('/about', 'about')
     ->name('about');
 
-// Endpoint deteksi sementara untuk UI/UX
-Route::post('/predict', function () {
-    return response()->json([
-        'message' => 'Model YOLO belum diintegrasikan.',
-        'detections' => [],
-        'demo' => true,
-    ], 503);
-})->name('predict');
+// Endpoint prediksi YOLO
+Route::post('/predict', [
+    DetectionController::class,
+    'predict'
+])->name('predict');

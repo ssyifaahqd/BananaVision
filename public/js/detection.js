@@ -2,29 +2,45 @@
 document.addEventListener("DOMContentLoaded", () => {
     const $ = id => document.getElementById(id);
 
+    // ========================================================
+    // 1. ELEMEN HALAMAN
+    // ========================================================
+
     const webcam = $("webcam");
     const image = $("imagePreview");
     const video = $("videoPreview");
     const canvas = $("overlay");
-    const ctx = canvas.getContext("2d");
     const stage = $("mediaStage");
+
+    if (!webcam || !image || !video || !canvas || !stage) {
+        console.error("Elemen halaman deteksi tidak lengkap.");
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
 
     const capture = document.createElement("canvas");
     const captureCtx = capture.getContext("2d");
 
     const INTERVAL = 400;
+    const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
     const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 
     let mode = "webcam";
     let stream = null;
     let mediaUrl = null;
     let imageFile = null;
+    let videoReady = false;
+
     let active = false;
     let busy = false;
     let timer = null;
     let generation = 0;
     let lastResult = null;
-    let videoReady = false;
+
+    // ========================================================
+    // 2. STATUS DAN TOMBOL
+    // ========================================================
 
     function setStatus(message) {
         $("statusText").textContent = message;
@@ -35,6 +51,15 @@ document.addEventListener("DOMContentLoaded", () => {
         $("liveDot").classList.toggle("active", value);
     }
 
+    function updateButtons() {
+        $("startCamera").disabled = !!stream;
+        $("stopCamera").disabled = !stream;
+        $("toggleDetection").disabled = !stream;
+
+        $("scanImage").disabled = !imageFile || busy;
+        $("analyzeVideo").disabled = !videoReady;
+    }
+
     function clearOverlay() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         lastResult = null;
@@ -42,6 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function resetResults() {
         clearOverlay();
+
         $("objectCount").textContent = "0 objek";
         $("emptyResult").hidden = false;
         $("resultContent").hidden = true;
@@ -49,25 +75,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
         $("emptyResult").querySelector("h3").textContent =
             "Belum ada hasil analisis";
+
         $("emptyResult").querySelector("p").textContent =
             "Aktifkan kamera atau unggah media untuk melihat hasil deteksi.";
     }
 
+    // ========================================================
+    // 3. HENTIKAN PROSES
+    // ========================================================
+
     function stopLoop() {
         active = false;
         generation++;
-        clearTimeout(timer);
-        timer = null;
+
+        if (timer !== null) {
+            clearTimeout(timer);
+            timer = null;
+        }
+
         setLive(false);
         $("toggleDetection").textContent = "Deteksi Otomatis";
-    }
-
-    function updateButtons() {
-        $("startCamera").disabled = !!stream;
-        $("stopCamera").disabled = !stream;
-        $("toggleDetection").disabled = !stream;
-        $("scanImage").disabled = !imageFile || busy;
-        $("analyzeVideo").disabled = !videoReady;
     }
 
     function stopCamera() {
@@ -81,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
         webcam.pause();
         webcam.srcObject = null;
         webcam.hidden = true;
+
         updateButtons();
     }
 
@@ -104,7 +132,15 @@ document.addEventListener("DOMContentLoaded", () => {
         updateButtons();
     }
 
+    // ========================================================
+    // 4. PILIH MODE
+    // ========================================================
+
     function switchMode(next) {
+        if (!["webcam", "image", "video"].includes(next)) {
+            return;
+        }
+
         stopCamera();
         clearFiles();
         resetResults();
@@ -113,6 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.querySelectorAll(".mode").forEach(button => {
             const selected = button.dataset.mode === next;
+
             button.classList.toggle("active", selected);
             button.setAttribute("aria-pressed", String(selected));
         });
@@ -120,6 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
         $("webcamControls").hidden = next !== "webcam";
         $("imageControls").hidden = next !== "image";
         $("videoControls").hidden = next !== "video";
+
         $("mediaPlaceholder").hidden = false;
 
         const descriptions = {
@@ -136,11 +174,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         $("mediaPlaceholder").querySelector("p").textContent =
             descriptions[next];
+
         $("helperText").textContent = helpers[next];
 
         setStatus("Menunggu input");
         updateButtons();
     }
+
+    // ========================================================
+    // 5. LIVE WEBCAM
+    // ========================================================
 
     async function startCamera() {
         if (mode !== "webcam" || stream) return;
@@ -156,14 +199,15 @@ document.addEventListener("DOMContentLoaded", () => {
             setStatus("Meminta izin kamera...");
             $("startCamera").disabled = true;
 
-            const newStream = await navigator.mediaDevices.getUserMedia({
-                audio: false,
-                video: {
-                    facingMode: { ideal: "environment" },
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
-            });
+            const newStream =
+                await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: {
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
 
             if (token !== generation || mode !== "webcam") {
                 newStream.getTracks().forEach(t => t.stop());
@@ -172,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             stream = newStream;
             webcam.srcObject = stream;
+
             await webcam.play();
 
             if (token !== generation || mode !== "webcam") {
@@ -184,17 +229,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
             updateButtons();
             startLoop();
+
         } catch (error) {
             stopCamera();
             setStatus("Kamera gagal diaktifkan");
             alert(error.message);
+
         } finally {
             updateButtons();
         }
     }
 
+    // ========================================================
+    // 6. LOOP DETEKSI
+    // ========================================================
+
     function startLoop() {
         if (active) return;
+
         if (mode === "webcam" && !stream) return;
         if (mode === "video" && video.paused) return;
 
@@ -216,6 +268,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (mode === "video") return video;
         return image;
     }
+
+    // ========================================================
+    // 7. AMBIL FRAME
+    // ========================================================
 
     function captureFrame() {
         return new Promise((resolve, reject) => {
@@ -239,48 +295,88 @@ document.addEventListener("DOMContentLoaded", () => {
                 640 / Math.max(width, height)
             );
 
-            capture.width = Math.max(1, Math.round(width * scale));
-            capture.height = Math.max(1, Math.round(height * scale));
+            capture.width = Math.max(
+                1,
+                Math.round(width * scale)
+            );
+
+            capture.height = Math.max(
+                1,
+                Math.round(height * scale)
+            );
 
             captureCtx.drawImage(
                 source,
-                0, 0,
+                0,
+                0,
                 capture.width,
                 capture.height
             );
 
-            capture.toBlob(blob => {
-                if (blob) resolve(blob);
-                else reject(new Error("Gagal mengambil frame."));
-            }, "image/jpeg", 0.85);
+            capture.toBlob(
+                blob => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(
+                            new Error("Gagal mengambil frame.")
+                        );
+                    }
+                },
+                "image/jpeg",
+                0.85
+            );
         });
     }
 
-    async function predict(blob) {
-        const form = new FormData();
-        form.append("image", blob, "frame.jpg");
+    // ========================================================
+    // 8. KIRIM FRAME KE LARAVEL
+    // ========================================================
 
-        const response = await fetch(window.BANANA.endpoint, {
-            method: "POST",
-            headers: {
-                "X-CSRF-TOKEN": window.BANANA.csrf,
-                "Accept": "application/json"
-            },
-            body: form
-        });
+    async function predictFrame(blob) {
+        if (!window.BANANA?.endpoint) {
+            throw new Error(
+                "Endpoint Laravel belum dikonfigurasi."
+            );
+        }
+
+        const form = new FormData();
+
+        form.append(
+            "image",
+            blob,
+            "frame.jpg"
+        );
+
+        const response = await fetch(
+            window.BANANA.endpoint,
+            {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": window.BANANA.csrf,
+                    "Accept": "application/json"
+                },
+                body: form
+            }
+        );
 
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
             throw new Error(
                 data.errors?.image?.[0] ||
+                data.detail ||
                 data.message ||
-                "Gagal menghubungi server YOLO."
+                `Deteksi gagal (HTTP ${response.status}).`
             );
         }
 
         return data;
     }
+
+    // ========================================================
+    // 9. GAMBAR BOUNDING BOX
+    // ========================================================
 
     function drawBoxes(data) {
         const width = stage.clientWidth;
@@ -293,39 +389,86 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, width, height);
 
-        const iw = data.image_width;
-        const ih = data.image_height;
+        const iw = Number(data.image_width);
+        const ih = Number(data.image_height);
 
         if (!iw || !ih) return;
 
-        const scale = Math.min(width / iw, height / ih);
-        const offsetX = (width - iw * scale) / 2;
-        const offsetY = (height - ih * scale) / 2;
+        const source = sourceElement();
+
+        // Cocokkan koordinat dengan object-fit media.
+        const style = window.getComputedStyle(source);
+        const fit = style.objectFit || "contain";
+
+        const mediaWidth = source.clientWidth || width;
+        const mediaHeight = source.clientHeight || height;
+
+        const mediaX = source.offsetLeft || 0;
+        const mediaY = source.offsetTop || 0;
+
+        let scaleX;
+        let scaleY;
+        let offsetX;
+        let offsetY;
+
+        if (fit === "fill") {
+            scaleX = mediaWidth / iw;
+            scaleY = mediaHeight / ih;
+            offsetX = mediaX;
+            offsetY = mediaY;
+        } else {
+            const scale = fit === "cover"
+                ? Math.max(mediaWidth / iw, mediaHeight / ih)
+                : Math.min(mediaWidth / iw, mediaHeight / ih);
+
+            scaleX = scale;
+            scaleY = scale;
+
+            offsetX = mediaX + (mediaWidth - iw * scale) / 2;
+            offsetY = mediaY + (mediaHeight - ih * scale) / 2;
+        }
 
         for (const item of data.detections || []) {
+            if (!Array.isArray(item.bbox) ||
+                item.bbox.length !== 4) {
+                continue;
+            }
+
             const [x1, y1, x2, y2] = item.bbox;
 
-            const x = offsetX + x1 * scale;
-            const y = offsetY + y1 * scale;
-            const w = (x2 - x1) * scale;
-            const h = (y2 - y1) * scale;
+            const x = offsetX + x1 * scaleX;
+            const y = offsetY + y1 * scaleY;
 
-            const color = "#FFD400";
+            const w = (x2 - x1) * scaleX;
+            const h = (y2 - y1) * scaleY;
+
+            const colors = {
+                Unripe: "#48B96A",
+                Ripe: "#FFD400",
+                Overripe: "#D97745"
+            };
+
+            const color =
+                colors[item.class_name] || "#FFD400";
 
             ctx.strokeStyle = color;
             ctx.lineWidth = 3;
             ctx.strokeRect(x, y, w, h);
 
             const label =
-                `${item.class_name} ${Number(item.confidence).toFixed(2)}`;
+                `${item.label || item.class_name} ` +
+                `${(Number(item.confidence) * 100).toFixed(1)}%`;
 
             ctx.font = "bold 14px Arial";
 
-            const labelWidth = ctx.measureText(label).width + 18;
+            const labelWidth =
+                ctx.measureText(label).width + 18;
+
             const lx = Math.max(
                 0,
                 Math.min(x, width - labelWidth)
             );
+
             const ly = y >= 29 ? y - 29 : y;
 
             ctx.fillStyle = color;
@@ -335,6 +478,10 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.fillText(label, lx + 9, ly + 20);
         }
     }
+
+    // ========================================================
+    // 10. TAMPILKAN HASIL
+    // ========================================================
 
     function renderResults(data) {
         lastResult = data;
@@ -368,7 +515,8 @@ document.addEventListener("DOMContentLoaded", () => {
         $("predictionLabel").textContent =
             `${best.label} (${best.class_name})`;
 
-        $("predictionCaption").textContent = best.caption;
+        $("predictionCaption").textContent =
+            best.caption || data.caption || "";
 
         $("confidenceValue").textContent =
             `${(best.confidence * 100).toFixed(1)}%`;
@@ -384,17 +532,23 @@ document.addEventListener("DOMContentLoaded", () => {
             card.className = "detection-item";
 
             const title = document.createElement("strong");
+
             title.textContent =
-                `${index + 1}. ${item.label} (${item.class_name}) · ` +
+                `${index + 1}. ${item.label} ` +
+                `(${item.class_name}) · ` +
                 `${(item.confidence * 100).toFixed(1)}%`;
 
-            const caption = document.createElement("p");
-            caption.textContent = item.caption;
+            const description = document.createElement("p");
+            description.textContent = item.caption || "";
 
-            card.append(title, caption);
+            card.append(title, description);
             list.appendChild(card);
         });
     }
+
+    // ========================================================
+    // 11. JALANKAN DETEKSI
+    // ========================================================
 
     async function scan() {
         if (busy) return;
@@ -409,9 +563,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const blob = await captureFrame();
-            const result = await predict(blob);
+            const result = await predictFrame(blob);
 
-            if (token !== generation || currentMode !== mode) return;
+            // Abaikan respons dari mode yang sudah ditutup.
+            if (
+                token !== generation ||
+                currentMode !== mode
+            ) {
+                return;
+            }
 
             if (mode === "video") {
                 if (
@@ -426,12 +586,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
             renderResults(result);
             setStatus("Deteksi berhasil");
+
         } catch (error) {
+            console.error("BananaVision:", error);
+
             if (token === generation) {
                 stopLoop();
                 setStatus("Deteksi gagal");
                 alert(error.message);
             }
+
         } finally {
             busy = false;
             updateButtons();
@@ -453,14 +617,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // ========================================================
+    // 12. UPLOAD GAMBAR
+    // ========================================================
+
     function loadImage(file) {
         if (!file) return;
 
         if (
-            !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
-            file.size > 8 * 1024 * 1024
+            !["image/jpeg", "image/png", "image/webp"]
+                .includes(file.type) ||
+            file.size > MAX_IMAGE_SIZE
         ) {
-            alert("Gunakan JPG, PNG, atau WEBP maksimal 8 MB.");
+            alert(
+                "Gunakan JPG, PNG, atau WEBP maksimal 8 MB."
+            );
             return;
         }
 
@@ -474,6 +645,7 @@ document.addEventListener("DOMContentLoaded", () => {
         image.onload = () => {
             image.hidden = false;
             $("mediaPlaceholder").hidden = true;
+
             setStatus("Gambar siap dideteksi");
             updateButtons();
         };
@@ -486,14 +658,21 @@ document.addEventListener("DOMContentLoaded", () => {
         image.src = mediaUrl;
     }
 
+    // ========================================================
+    // 13. UPLOAD VIDEO
+    // ========================================================
+
     function loadVideo(file) {
         if (!file) return;
 
         if (
-            !["video/mp4", "video/webm"].includes(file.type) ||
+            !["video/mp4", "video/webm"]
+                .includes(file.type) ||
             file.size > MAX_VIDEO_SIZE
         ) {
-            alert("Gunakan MP4 atau WEBM maksimal 100 MB.");
+            alert(
+                "Gunakan MP4 atau WEBM maksimal 100 MB."
+            );
             return;
         }
 
@@ -506,8 +685,10 @@ document.addEventListener("DOMContentLoaded", () => {
         video.onloadedmetadata = () => {
             videoReady = true;
             video.hidden = false;
+
             $("mediaPlaceholder").hidden = true;
             setStatus("Video siap dianalisis");
+
             updateButtons();
         };
 
@@ -527,17 +708,24 @@ document.addEventListener("DOMContentLoaded", () => {
             stopLoop();
             resetResults();
 
-            if (video.ended) video.currentTime = 0;
+            if (video.ended) {
+                video.currentTime = 0;
+            }
 
             await video.play();
 
             if (mode === "video" && !video.paused) {
                 startLoop();
             }
+
         } catch (error) {
             alert(error.message);
         }
     }
+
+    // ========================================================
+    // 14. EVENT TOMBOL DAN MODE
+    // ========================================================
 
     document.querySelectorAll(".mode").forEach(button => {
         button.addEventListener("click", () => {
@@ -545,11 +733,15 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    $("startCamera").addEventListener("click", startCamera);
+    $("startCamera").addEventListener(
+        "click",
+        startCamera
+    );
 
     $("stopCamera").addEventListener("click", () => {
         stopCamera();
         resetResults();
+
         $("mediaPlaceholder").hidden = false;
         setStatus("Kamera dimatikan");
     });
@@ -574,12 +766,19 @@ document.addEventListener("DOMContentLoaded", () => {
         event.target.value = "";
     });
 
-    $("scanImage").addEventListener("click", scan);
+    $("scanImage").addEventListener(
+        "click",
+        scan
+    );
 
     $("analyzeVideo").addEventListener(
         "click",
         startVideoAnalysis
     );
+
+    // ========================================================
+    // 15. EVENT VIDEO
+    // ========================================================
 
     video.addEventListener("pause", () => {
         if (mode === "video") {
@@ -600,14 +799,24 @@ document.addEventListener("DOMContentLoaded", () => {
         setStatus("Video selesai");
     });
 
+    // ========================================================
+    // 16. RESIZE DAN CLEANUP
+    // ========================================================
+
     window.addEventListener("resize", () => {
-        if (lastResult) drawBoxes(lastResult);
+        if (lastResult) {
+            drawBoxes(lastResult);
+        }
     });
 
     window.addEventListener("pagehide", () => {
         stopCamera();
         clearFiles();
     });
+
+    // ========================================================
+    // 17. INISIALISASI
+    // ========================================================
 
     switchMode("webcam");
 });

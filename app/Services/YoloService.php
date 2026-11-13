@@ -3,45 +3,70 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 class YoloService
 {
     public function predict(string $imagePath): array
     {
-        $file = fopen($imagePath, 'rb');
+        if (! is_file($imagePath)) {
+            throw new RuntimeException(
+                'File gambar tidak ditemukan.'
+            );
+        }
 
-        if ($file === false) {
-            throw new \RuntimeException(
+        $url = rtrim(
+            config('services.yolo.url', 'http://127.0.0.1:8001'),
+            '/'
+        );
+
+        $handle = fopen($imagePath, 'rb');
+
+        if ($handle === false) {
+            throw new RuntimeException(
                 'Gagal membuka gambar.'
             );
         }
 
         try {
-            $response = Http::connectTimeout(5)
-                ->timeout(30)
-                ->attach('file', $file, 'frame.jpg')
-                ->post(
-                    rtrim(
-                        config('services.yolo.url'),
-                        '/'
-                    ) . '/predict'
-                );
+            $response = Http::timeout(120)
+                ->connectTimeout(10)
+                ->acceptJson()
+                ->asMultipart()
+                ->attach(
+                    'image',
+                    $handle,
+                    basename($imagePath)
+                )
+                ->post($url . '/predict');
 
-            $response->throw();
+            if ($response->failed()) {
+                Log::error('YOLO API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                throw new RuntimeException(
+                    'YOLO API HTTP ' .
+                    $response->status() .
+                    ': ' .
+                    $response->body()
+                );
+            }
 
             $data = $response->json();
 
-            if (!is_array($data) ||
-                !isset($data['detections'])) {
-                throw new \RuntimeException(
-                    'Respons YOLO tidak valid.'
+            if (! is_array($data)) {
+                throw new RuntimeException(
+                    'Respons API YOLO tidak valid.'
                 );
             }
 
             return $data;
 
         } finally {
-            fclose($file);
+            fclose($handle);
         }
     }
 }
