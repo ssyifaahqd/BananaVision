@@ -4,6 +4,8 @@ Deteksi kematangan pisang + caption otomatis.
   python detect.py --mode video  --source video.mp4 --out hasil.mp4
   python detect.py --mode webcam                       (tekan 'q' untuk keluar)
 """
+
+from pathlib import Path
 import argparse, time, cv2
 from collections import Counter
 from ultralytics import YOLO
@@ -33,9 +35,11 @@ def draw(frame, r, names, fps=None):
 
 COCO_BANANA = 46  # id kelas "banana" di COCO
 
-def load_coco(path="yolov8n.pt"):
-    """Model COCO bawaan (auto-download). Dipakai buat nyaring false positive (muka, HP, dll)."""
-    return YOLO(path)
+def load_coco(path=None):
+    """Model COCO bawaan."""
+    if path is None:
+        path = Path(__file__).resolve().parent / "yolov8n.pt"
+    return YOLO(str(path))
 
 def keep_idx(boxes_xyxy, banana_xyxy, thr=0.4):
     """Index kotak model kita yang minimal `thr` luasnya tumpang tindih dengan kotak 'banana' COCO."""

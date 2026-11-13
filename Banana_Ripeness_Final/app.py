@@ -1,5 +1,7 @@
 # Deploy: streamlit run app.py   (Streamlit Community Cloud / HF Spaces)
 # requirements.txt: streamlit ultralytics streamlit-webrtc av opencv-python-headless
+
+from pathlib import Path
 import tempfile, cv2, av, streamlit as st
 from streamlit_webrtc import webrtc_streamer, RTCConfiguration
 from ultralytics import YOLO
@@ -9,7 +11,10 @@ st.set_page_config(page_title="Deteksi Kematangan Pisang", page_icon="🍌", lay
 st.title("🍌 Deteksi Kematangan Pisang")
 
 @st.cache_resource
-def load(): return YOLO("best.pt")
+BASE_DIR = Path(__file__).resolve().parent
+
+def load():
+    return YOLO(str(BASE_DIR / "best.pt"))
 @st.cache_resource
 def load_f(): return load_coco()
 model = load(); coco = load_f(); names = model.names
